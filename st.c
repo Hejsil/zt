@@ -165,7 +165,6 @@ static int eschandle(uchar);
 static void strdump(void);
 static void strhandle(void);
 static void strparse(void);
-static void strreset(void);
 
 void tprinter(char *, size_t);
 size_t utf8decode(const char *, Rune *, size_t);
@@ -174,6 +173,7 @@ char *utf8strchr(char *, Rune);
 void drawregion(int, int, int, int);
 void tsetdirt(int, int);
 void tfulldirt(void);
+void tstrsequence(uchar);
 
 static void tdumpsel(void);
 static void tdumpline(int);
@@ -204,7 +204,6 @@ static void tdectest(char );
 static void tdefutf8(char);
 static int32_t tdefcolor(int *, int *, int);
 static void tdeftran(char);
-static void tstrsequence(uchar);
 
 static void selnormalize(void);
 static void selscroll(int, int);
@@ -216,10 +215,10 @@ static char base64dec_getc(const char **);
 /* Globals */
 static Selection sel;
 static CSIEscape csiescseq;
-static STREscape strescseq;
 static int cmdfd;
 static pid_t pid;
 
+STREscape strescseq;
 Term term;
 int iofd = 1;
 
@@ -1803,12 +1802,6 @@ strdump(void)
 }
 
 void
-strreset(void)
-{
-	memset(&strescseq, 0, sizeof(strescseq));
-}
-
-void
 sendbreak(const Arg *arg)
 {
 	if (tcsendbreak(cmdfd, 0))
@@ -1919,30 +1912,6 @@ tdectest(char c)
 				tsetchar('E', &term.c.attr, x, y);
 		}
 	}
-}
-
-void
-tstrsequence(uchar c)
-{
-	strreset();
-
-	switch (c) {
-	case 0x90:   /* DCS -- Device Control String */
-		c = 'P';
-		term.esc |= ESC_DCS;
-		break;
-	case 0x9f:   /* APC -- Application Program Command */
-		c = '_';
-		break;
-	case 0x9e:   /* PM -- Privacy Message */
-		c = '^';
-		break;
-	case 0x9d:   /* OSC -- Operating System Command */
-		c = ']';
-		break;
-	}
-	strescseq.type = c;
-	term.esc |= ESC_STR;
 }
 
 void
@@ -2387,17 +2356,4 @@ tresize(int col, int row)
 		tcursor(CURSOR_LOAD);
 	}
 	term.c = c;
-}
-
-void
-resettitle(void)
-{
-	xsettitle(NULL);
-}
-
-void
-redraw(void)
-{
-	tfulldirt();
-	draw();
 }

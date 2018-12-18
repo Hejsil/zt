@@ -10,6 +10,26 @@ const unicode = std.unicode;
 
 const allocator = heap.c_allocator;
 
+const ESC_BUF_SIZ = (128 * @sizeOf(Rune));
+const ESC_ARG_SIZ = 16;
+const STR_BUF_SIZ = ESC_BUF_SIZ;
+const STR_ARG_SIZ = ESC_ARG_SIZ;
+
+const ESC_START = 1 << 0;
+const ESC_CSI = 1 << 1;
+
+/// OSC, PM, APC
+const ESC_STR = 1 << 2;
+const ESC_ALTCHARSET = 1 << 3;
+
+/// a final string was encountered
+const ESC_STR_END = 1 << 4;
+
+/// Enter in test mode
+const ESC_TEST = 1 << 5;
+const ESC_UTF8 = 1 << 6;
+const ESC_DCS = 1 << 7;
+
 const ATTR_NULL = 0;
 const ATTR_BOLD = 1 << 0;
 const ATTR_FAINT = 1 << 1;
@@ -36,6 +56,24 @@ const TCursor = extern struct {
     x: c_int,
     y: c_int,
     state: u8,
+};
+
+/// STR Escape sequence structs
+/// ESC type [[ [<priv>] <arg> [;]] <mode>] ESC '\'
+const STREscape = extern struct {
+    @"type": u8,
+    buf: [STR_BUF_SIZ]u8,
+    len: c_int,
+    args: [STR_ARG_SIZ]?[*]u8,
+    narg: c_int,
+
+    const zero = STREscape{
+        .@"type" = 0,
+        .buf = []u8{0} ** STR_BUF_SIZ,
+        .len = 0,
+        .args = []?[*]u8{null} ** STR_ARG_SIZ,
+        .narg = 0,
+    };
 };
 
 const Line = [*]Glyph;
@@ -67,11 +105,13 @@ const UTF_INVALID = 0xFFFD;
 
 extern var iofd: c_int;
 extern var term: Term;
+extern var strescseq: STREscape;
 
 extern fn xdrawline(Line, c_int, c_int, c_int) void;
 extern fn xstartdraw() c_int;
 extern fn xfinishdraw() void;
 extern fn xdrawcursor(c_int, c_int, Glyph, c_int, c_int, Glyph) void;
+extern fn xsettitle(?[*]const u8) void;
 
 pub export fn xmalloc(len: usize) *c_void {
     return c.malloc(len).?;
@@ -191,4 +231,32 @@ pub export fn draw() void {
 pub fn limit(x: var, a: @typeOf(x), b: @typeOf(x)) @typeOf(x) {
     var res = math.max(x, a);
     return math.min(res, b);
+}
+
+pub export fn resettitle() void {
+    xsettitle(null);
+}
+
+pub export fn redraw() void {
+    tfulldirt();
+    draw();
+}
+
+pub export fn tstrsequence(char: u8) void {
+    strescseq = STREscape.zero;
+    switch (char) {
+        // DCS -- Device Control String
+        0x90 => {
+            strescseq.@"type" = 'P';
+            term.esc |= ESC_DCS;
+        },
+        // APC -- Application Program Command
+        0x9f => strescseq.@"type" = '_',
+        // PM -- Privacy Message
+        0x9e => strescseq.@"type" = '^',
+        // OSC -- Operating System Command
+        0x9d => strescseq.@"type" = ']',
+        else => strescseq.@"type" = char,
+    }
+    term.esc |= ESC_STR;
 }
