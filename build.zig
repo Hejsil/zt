@@ -21,8 +21,6 @@ pub fn build(b: *Builder) !void {
 
     const exe = b.addCExecutable("zt");
     exe.addCompileFlags(cflags);
-    exe.addIncludeDir("/usr/X11R6/include");
-    exe.addLibPath("/usr/X11R6/lib");
 
     linkLibs(exe, [][]const u8{
         "m",

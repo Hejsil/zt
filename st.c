@@ -171,6 +171,8 @@ void tprinter(char *, size_t);
 size_t utf8decode(const char *, Rune *, size_t);
 char *utf8strchr(char *, Rune);
 
+void drawregion(int, int, int, int);
+
 static void tdumpsel(void);
 static void tdumpline(int);
 static void tdump(void);
@@ -204,8 +206,6 @@ static int32_t tdefcolor(int *, int *, int);
 static void tdeftran(char);
 static void tstrsequence(uchar);
 
-static void drawregion(int, int, int, int);
-
 static void selnormalize(void);
 static void selscroll(int, int);
 static void selsnap(int *, int *, int);
@@ -214,13 +214,13 @@ static char *base64dec(const char *);
 static char base64dec_getc(const char **);
 
 /* Globals */
-static Term term;
 static Selection sel;
 static CSIEscape csiescseq;
 static STREscape strescseq;
 static int cmdfd;
 static pid_t pid;
 
+Term term;
 int iofd = 1;
 
 static uchar utfbyte[UTF_SIZ + 1] = {0x80,    0, 0xC0, 0xE0, 0xF0};
@@ -2411,19 +2411,6 @@ void
 resettitle(void)
 {
 	xsettitle(NULL);
-}
-
-void
-drawregion(int x1, int y1, int x2, int y2)
-{
-	int y;
-	for (y = y1; y < y2; y++) {
-		if (!term.dirty[y])
-			continue;
-
-		term.dirty[y] = 0;
-		xdrawline(term.line[y], x1, y, x2);
-	}
 }
 
 void

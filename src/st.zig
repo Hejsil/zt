@@ -9,12 +9,51 @@ const unicode = std.unicode;
 
 const allocator = heap.c_allocator;
 
+const Glyph = extern struct {
+    u: Rune,
+    mode: c_ushort,
+    fg: u32,
+    bg: u32,
+};
+
+const TCursor = extern struct {
+    attr: Glyph,
+    x: c_int,
+    y: c_int,
+    state: u8,
+};
+
+const Line = *Glyph;
+
+/// Internal representation of the screen
+const Term = extern struct {
+    row: c_int,
+    col: c_int,
+    line: [*]Line,
+    alt: *Line,
+    dirty: [*]c_int,
+    c: TCursor,
+    ocx: c_int,
+    ocy: c_int,
+    top: c_int,
+    bot: c_int,
+    mode: c_int,
+    esc: c_int,
+    trantbl: [4]u8,
+    charset: c_int,
+    icharset: c_int,
+    tabs: *c_int,
+};
+
 // This was a typedef of uint_least32_t. Is there anywhere where
 // uint_least32_t != uint32_t in practice?
 const Rune = u32;
 const UTF_INVALID = 0xFFFD;
 
 extern var iofd: c_int;
+extern var term: Term;
+
+extern fn xdrawline(Line, c_int, c_int, c_int) void;
 
 pub export fn xmalloc(len: usize) *c_void {
     return c.malloc(len).?;
@@ -81,4 +120,16 @@ pub export fn utf8strchr(s: [*]const u8, u: Rune) ?[*]const u8 {
     };
 
     return null;
+}
+
+pub export fn drawregion(x1: c_int, y1: c_int, x2: c_int, y2: c_int) void {
+    var y: c_int = y1;
+    while (y < y2) : (y += 1) {
+        const uy = @intCast(usize, y);
+        if (term.dirty[uy] == 0)
+            continue;
+
+        term.dirty[uy] = 0;
+        xdrawline(term.line[uy], x1, y, x2);
+    }
 }
