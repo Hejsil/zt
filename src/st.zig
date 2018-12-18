@@ -54,3 +54,8 @@ pub export fn utf8decode(s: [*]const u8, u: *Rune, slen: usize) usize {
     u.* = unicode.utf8Decode(s[0..len]) catch return 0;
     return len;
 }
+
+pub export fn utf8encode(u: Rune, s: [*]u8) usize {
+    const len = unicode.utf8CodepointSequenceLength(u) catch return 0;
+    return unicode.utf8Encode(u, s[0..len]) catch unreachable;
+}
