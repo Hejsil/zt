@@ -3,11 +3,26 @@ const std = @import("std");
 const c = std.c;
 const debug = std.debug;
 const heap = std.heap;
+const math = std.math;
 const mem = std.mem;
 const os = std.os;
 const unicode = std.unicode;
 
 const allocator = heap.c_allocator;
+
+const ATTR_NULL = 0;
+const ATTR_BOLD = 1 << 0;
+const ATTR_FAINT = 1 << 1;
+const ATTR_ITALIC = 1 << 2;
+const ATTR_UNDERLINE = 1 << 3;
+const ATTR_BLINK = 1 << 4;
+const ATTR_REVERSE = 1 << 5;
+const ATTR_INVISIBLE = 1 << 6;
+const ATTR_STRUCK = 1 << 7;
+const ATTR_WRAP = 1 << 8;
+const ATTR_WIDE = 1 << 9;
+const ATTR_WDUMMY = 1 << 10;
+const ATTR_BOLD_FAINT = ATTR_BOLD | ATTR_FAINT;
 
 const Glyph = extern struct {
     u: Rune,
@@ -23,7 +38,7 @@ const TCursor = extern struct {
     state: u8,
 };
 
-const Line = *Glyph;
+const Line = [*]Glyph;
 
 /// Internal representation of the screen
 const Term = extern struct {
@@ -54,6 +69,9 @@ extern var iofd: c_int;
 extern var term: Term;
 
 extern fn xdrawline(Line, c_int, c_int, c_int) void;
+extern fn xstartdraw() c_int;
+extern fn xfinishdraw() void;
+extern fn xdrawcursor(c_int, c_int, Glyph, c_int, c_int, Glyph) void;
 
 pub export fn xmalloc(len: usize) *c_void {
     return c.malloc(len).?;
@@ -135,5 +153,42 @@ pub export fn drawregion(x1: c_int, y1: c_int, x2: c_int, y2: c_int) void {
 }
 
 pub export fn tsetdirt(top: c_int, bot: c_int) void {
-    mem.set(c_int, term.dirty[@intCast(usize, top)..@intCast(usize, bot)], 1);
+    const ltop = limit(top, 0, term.row - 1);
+    const lbot = limit(bot, 0, term.row - 1);
+    mem.set(c_int, term.dirty[@intCast(usize, ltop)..@intCast(usize, lbot)], 1);
+}
+
+pub export fn tfulldirt() void {
+    tsetdirt(0, term.row - 1);
+}
+
+pub export fn draw() void {
+    var cx = term.c.x;
+    if (xstartdraw() == 0)
+        return;
+
+    term.ocx = limit(term.ocx, 0, term.col - 1);
+    term.ocy = limit(term.ocy, 0, term.row - 1);
+    if (term.line[@intCast(usize, term.ocy)][@intCast(usize, term.ocx)].mode & ATTR_WDUMMY != 0)
+        term.ocx -= 1;
+    if (term.line[@intCast(usize, term.c.y)][@intCast(usize, cx)].mode & ATTR_WDUMMY != 0)
+        cx -= 1;
+
+    drawregion(0, 0, term.col, term.row);
+    xdrawcursor(
+        cx,
+        term.c.y,
+        term.line[@intCast(usize, term.c.y)][@intCast(usize, cx)],
+        term.ocx,
+        term.ocy,
+        term.line[@intCast(usize, term.ocy)][@intCast(usize, term.ocx)],
+    );
+    term.ocx = cx;
+    term.ocy = term.c.y;
+    xfinishdraw();
+}
+
+pub fn limit(x: var, a: @typeOf(x), b: @typeOf(x)) @typeOf(x) {
+    var res = math.max(x, a);
+    return math.min(res, b);
 }

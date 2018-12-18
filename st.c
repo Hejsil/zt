@@ -173,6 +173,7 @@ char *utf8strchr(char *, Rune);
 
 void drawregion(int, int, int, int);
 void tsetdirt(int, int);
+void tfulldirt(void);
 
 static void tdumpsel(void);
 static void tdumpline(int);
@@ -198,7 +199,6 @@ static void tsetscroll(int, int);
 static void tswapscreen(void);
 static void tsetmode(int, int, int *, int);
 static int twrite(const char *, int, int);
-static void tfulldirt(void);
 static void tcontrolcode(uchar );
 static void tdectest(char );
 static void tdefutf8(char);
@@ -841,12 +841,6 @@ tsetdirtattr(int attr)
 			}
 		}
 	}
-}
-
-void
-tfulldirt(void)
-{
-	tsetdirt(0, term.row-1);
 }
 
 void
@@ -2399,29 +2393,6 @@ void
 resettitle(void)
 {
 	xsettitle(NULL);
-}
-
-void
-draw(void)
-{
-	int cx = term.c.x;
-
-	if (!xstartdraw())
-		return;
-
-	/* adjust cursor position */
-	LIMIT(term.ocx, 0, term.col-1);
-	LIMIT(term.ocy, 0, term.row-1);
-	if (term.line[term.ocy][term.ocx].mode & ATTR_WDUMMY)
-		term.ocx--;
-	if (term.line[term.c.y][cx].mode & ATTR_WDUMMY)
-		cx--;
-
-	drawregion(0, 0, term.col, term.row);
-	xdrawcursor(cx, term.c.y, term.line[term.c.y][cx],
-			term.ocx, term.ocy, term.line[term.ocy][term.ocx]);
-	term.ocx = cx, term.ocy = term.c.y;
-	xfinishdraw();
 }
 
 void
