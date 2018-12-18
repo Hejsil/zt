@@ -234,7 +234,7 @@ pub export fn drawregion(x1: c_int, y1: c_int, x2: c_int, y2: c_int) void {
 pub export fn tsetdirt(top: c_int, bot: c_int) void {
     const ltop = limit(top, 0, term.row - 1);
     const lbot = limit(bot, 0, term.row - 1);
-    mem.set(c_int, term.dirty[@intCast(usize, ltop)..@intCast(usize, lbot)], 1);
+    mem.set(c_int, term.dirty[@intCast(usize, ltop)..@intCast(usize, lbot + 1)], 1);
 }
 
 pub export fn tfulldirt() void {
