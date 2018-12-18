@@ -249,15 +249,6 @@ xwrite(int fd, const char *s, size_t len)
 	return aux;
 }
 
-char *
-xstrdup(char *s)
-{
-	if ((s = strdup(s)) == NULL)
-		die("strdup: %s\n", strerror(errno));
-
-	return s;
-}
-
 size_t
 utf8decode(const char *c, Rune *u, size_t clen)
 {
