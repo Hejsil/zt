@@ -133,3 +133,7 @@ pub export fn drawregion(x1: c_int, y1: c_int, x2: c_int, y2: c_int) void {
         xdrawline(term.line[uy], x1, y, x2);
     }
 }
+
+pub export fn tsetdirt(top: c_int, bot: c_int) void {
+    mem.set(c_int, term.dirty[@intCast(usize, top)..@intCast(usize, bot)], 1);
+}

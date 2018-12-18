@@ -172,6 +172,7 @@ size_t utf8decode(const char *, Rune *, size_t);
 char *utf8strchr(char *, Rune);
 
 void drawregion(int, int, int, int);
+void tsetdirt(int, int);
 
 static void tdumpsel(void);
 static void tdumpline(int);
@@ -193,7 +194,6 @@ static void tscrollup(int, int);
 static void tscrolldown(int, int);
 static void tsetattr(int *, int);
 static void tsetchar(Rune, Glyph *, int, int);
-static void tsetdirt(int, int);
 static void tsetscroll(int, int);
 static void tswapscreen(void);
 static void tsetmode(int, int, int *, int);
@@ -826,18 +826,6 @@ tattrset(int attr)
 	}
 
 	return 0;
-}
-
-void
-tsetdirt(int top, int bot)
-{
-	int i;
-
-	LIMIT(top, 0, term.row-1);
-	LIMIT(bot, 0, term.row-1);
-
-	for (i = top; i <= bot; i++)
-		term.dirty[i] = 1;
 }
 
 void
