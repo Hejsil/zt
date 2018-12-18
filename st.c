@@ -171,6 +171,7 @@ size_t utf8decode(const char *, Rune *, size_t);
 char *utf8strchr(char *, Rune);
 void selsnap(int *, int *, int);
 int tlinelen(int);
+void selnormalize(void);
 
 void drawregion(int, int, int, int);
 void tsetdirt(int, int);
