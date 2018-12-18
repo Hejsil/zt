@@ -249,26 +249,6 @@ xwrite(int fd, const char *s, size_t len)
 	return aux;
 }
 
-void *
-xmalloc(size_t len)
-{
-	void *p;
-
-	if (!(p = malloc(len)))
-		die("malloc: %s\n", strerror(errno));
-
-	return p;
-}
-
-void *
-xrealloc(void *p, size_t len)
-{
-	if ((p = realloc(p, len)) == NULL)
-		die("realloc: %s\n", strerror(errno));
-
-	return p;
-}
-
 char *
 xstrdup(char *s)
 {
