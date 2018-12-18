@@ -5,8 +5,14 @@ const debug = std.debug;
 const heap = std.heap;
 const mem = std.mem;
 const os = std.os;
+const unicode = std.unicode;
 
 const allocator = heap.c_allocator;
+
+// This was a typedef of uint_least32_t. Is there anywhere where
+// uint_least32_t != uint32_t in practice?
+const Rune = u32;
+const UTF_INVALID = 0xFFFD;
 
 extern var iofd: c_int;
 
@@ -34,4 +40,17 @@ pub export fn tprinter(s: [*]const u8, len: usize) void {
             iofd = -1;
         };
     }
+}
+
+pub export fn utf8decode(s: [*]const u8, u: *Rune, slen: usize) usize {
+    u.* = UTF_INVALID;
+    if (slen == 0)
+        return slen;
+
+    const len = unicode.utf8ByteSequenceLength(s[0]) catch return 0;
+    if (slen < len)
+        return 0;
+
+    u.* = unicode.utf8Decode(s[0..len]) catch return 0;
+    return len;
 }

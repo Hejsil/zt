@@ -168,6 +168,7 @@ static void strparse(void);
 static void strreset(void);
 
 void tprinter(char *, size_t);
+size_t utf8decode(const char *, Rune *, size_t);
 
 static void tdumpsel(void);
 static void tdumpline(int);
@@ -208,8 +209,6 @@ static void selnormalize(void);
 static void selscroll(int, int);
 static void selsnap(int *, int *, int);
 
-static size_t utf8decode(const char *, Rune *, size_t);
-static Rune utf8decodebyte(char, size_t *);
 static char utf8encodebyte(Rune, size_t);
 static char *utf8strchr(char *, Rune);
 static size_t utf8validate(Rune *, size_t);
@@ -232,40 +231,6 @@ static uchar utfmask[UTF_SIZ + 1] = {0xC0, 0x80, 0xE0, 0xF0, 0xF8};
 static Rune utfmin[UTF_SIZ + 1] = {       0,    0,  0x80,  0x800,  0x10000};
 static Rune utfmax[UTF_SIZ + 1] = {0x10FFFF, 0x7F, 0x7FF, 0xFFFF, 0x10FFFF};
 
-size_t
-utf8decode(const char *c, Rune *u, size_t clen)
-{
-	size_t i, j, len, type;
-	Rune udecoded;
-
-	*u = UTF_INVALID;
-	if (!clen)
-		return 0;
-	udecoded = utf8decodebyte(c[0], &len);
-	if (!BETWEEN(len, 1, UTF_SIZ))
-		return 1;
-	for (i = 1, j = 1; i < clen && j < len; ++i, ++j) {
-		udecoded = (udecoded << 6) | utf8decodebyte(c[i], &type);
-		if (type != 0)
-			return j;
-	}
-	if (j < len)
-		return 0;
-	*u = udecoded;
-	utf8validate(u, len);
-
-	return len;
-}
-
-Rune
-utf8decodebyte(char c, size_t *i)
-{
-	for (*i = 0; *i < LEN(utfmask); ++(*i))
-		if (((uchar)c & utfmask[*i]) == utfbyte[*i])
-			return (uchar)c & ~utfmask[*i];
-
-	return 0;
-}
 
 size_t
 utf8encode(Rune u, char *c)
