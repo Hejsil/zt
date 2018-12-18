@@ -428,3 +428,36 @@ pub export fn selinit() void {
     sel.snap = 0;
     sel.ob.x = -1;
 }
+
+pub export fn selclear() void {
+    if (sel.ob.x == -1)
+        return;
+    sel.mode = SEL_IDLE;
+    sel.ob.x = -1;
+    tsetdirt(sel.nb.y, sel.ne.y);
+}
+
+pub export fn selnormalize() void {
+    if (sel.@"type" == SEL_REGULAR and sel.ob.y != sel.oe.y) {
+        sel.nb.x = if (sel.ob.y < sel.oe.y) sel.ob.x else sel.oe.x;
+        sel.ne.x = if (sel.ob.y < sel.oe.y) sel.oe.x else sel.ob.x;
+    } else {
+        sel.nb.x = math.min(sel.ob.x, sel.oe.x);
+        sel.ne.x = math.max(sel.ob.x, sel.oe.x);
+    }
+    sel.nb.y = math.min(sel.ob.y, sel.oe.y);
+    sel.ne.y = math.max(sel.ob.y, sel.oe.y);
+
+    selsnap(&sel.nb.x, &sel.nb.y, -1);
+    selsnap(&sel.ne.x, &sel.ne.y, 1);
+
+    // expand selection over line breaks
+    if (sel.@"type" == SEL_RECTANGULAR)
+        return;
+
+    const i = tlinelen(sel.nb.y);
+    if (i < sel.nb.x)
+        sel.nb.x = i;
+    if (tlinelen(sel.ne.y) <= sel.ne.x)
+        sel.ne.x = term.col - 1;
+}
