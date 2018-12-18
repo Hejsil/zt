@@ -1,3 +1,4 @@
+const config = @import("config.zig");
 const std = @import("std");
 
 const c = std.c;
@@ -14,6 +15,9 @@ const ESC_BUF_SIZ = (128 * @sizeOf(Rune));
 const ESC_ARG_SIZ = 16;
 const STR_BUF_SIZ = ESC_BUF_SIZ;
 const STR_ARG_SIZ = ESC_ARG_SIZ;
+
+const SNAP_WORD = 1;
+const SNAP_LINE = 2;
 
 const MODE_WRAP = 1 << 0;
 const MODE_INSERT = 1 << 1;
@@ -315,4 +319,85 @@ pub export fn selected(x: c_int, y: c_int) c_int {
 
 fn between(x: var, a: @typeOf(x), b: @typeOf(x)) bool {
     return a <= x and x <= b;
+}
+
+pub export fn selsnap(x: *c_int, y: *c_int, direction: c_int) void {
+    switch (sel.snap) {
+        SNAP_WORD => {
+            // Snap around if the word wraps around at the end or
+            // beginning of a line.
+            var prevgp = &term.line[@intCast(usize, y.*)][@intCast(usize, x.*)];
+            var prevdelim = isDelim(prevgp.u);
+            while (true) {
+                var newx = x.* + direction;
+                var newy = y.*;
+                if (!between(newx, 0, term.col - 1)) {
+                    newy += direction;
+                    newx = (newx + term.col) & term.col;
+                    if (between(newy, 0, term.row - 1))
+                        break;
+
+                    var yt: usize = undefined;
+                    var xt: usize = undefined;
+                    if (direction > 0) {
+                        yt = @intCast(usize, y.*);
+                        xt = @intCast(usize, x.*);
+                    } else {
+                        yt = @intCast(usize, newy);
+                        xt = @intCast(usize, newx);
+                    }
+
+                    if ((term.line[yt][xt].mode & ATTR_WRAP) == 0)
+                        break;
+                }
+                if (newx >= tlinelen(newy))
+                    break;
+
+                const gp = &term.line[@intCast(usize, newy)][@intCast(usize, newx)];
+                const delim = isDelim(gp.u);
+                if ((gp.mode & ATTR_WDUMMY == 0) and (delim != prevdelim or (delim and gp.u != prevgp.u)))
+                    break;
+
+                x.* = newx;
+                y.* = newy;
+                prevgp = gp;
+                prevdelim = delim;
+            }
+        },
+        SNAP_LINE => {
+            // Snap around if the the previous line or the current one
+            // has set ATTR_WRAP at its end. Then the whole next or
+            // previous line will be selected.
+            x.* = if (direction < 0) 0 else term.col - 1;
+            if (direction < 0) {
+                while (y.* > 0) : (y.* += direction) {
+                    if ((term.line[@intCast(usize, y.* - 1)][@intCast(usize, term.col - 1)].mode & ATTR_WRAP) == 0) {
+                        break;
+                    }
+                }
+            } else if (direction > 0) {
+                while (y.* < term.row - 1) : (y.* += direction) {
+                    if ((term.line[@intCast(usize, y.*)][@intCast(usize, term.col - 1)].mode & ATTR_WRAP) == 0) {
+                        break;
+                    }
+                }
+            }
+        },
+        else => {},
+    }
+}
+
+fn isDelim(u: Rune) bool {
+    return utf8strchr(config.worddelimiters, u) != null;
+}
+
+pub export fn tlinelen(y: c_int) c_int {
+    var i = term.col;
+    if (term.line[@intCast(usize, y)][@intCast(usize, i - 1)].mode & ATTR_WRAP != 0)
+        return i;
+
+    while (i > 0 and term.line[@intCast(usize, y)][@intCast(usize, i - 1)].u == ' ')
+        i -= 1;
+
+    return i;
 }

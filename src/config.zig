@@ -1,0 +1,1 @@
+pub const worddelimiters = c" ";
