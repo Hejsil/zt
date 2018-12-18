@@ -309,7 +309,7 @@ pub export fn tstrsequence(char: u8) void {
 }
 
 pub export fn selected(x: c_int, y: c_int) c_int {
-    if (sel.mode == SEL_EMPTY or sel.ob.x == -1 or (sel.alt != 0) != (term.mode & MODE_ALTSCREEN != 0))
+    if (sel.mode == SEL_EMPTY or sel.ob.x == -1 or (sel.alt != 0) != isSet(MODE_ALTSCREEN))
         return 0;
 
     if (sel.@"type" == SEL_RECTANGULAR)
@@ -460,4 +460,107 @@ pub export fn selnormalize() void {
         sel.nb.x = i;
     if (tlinelen(sel.ne.y) <= sel.ne.x)
         sel.ne.x = term.col - 1;
+}
+
+fn isSet(flag: var) bool {
+    return (term.mode & flag) != 0;
+}
+
+pub export fn selstart(col: c_int, row: c_int, snap: c_int) void {
+    selclear();
+    sel.mode = SEL_EMPTY;
+    sel.@"type" = SEL_REGULAR;
+    sel.alt = @boolToInt(isSet(MODE_ALTSCREEN));
+    sel.snap = snap;
+    sel.oe.x = col;
+    sel.ob.x = col;
+    sel.oe.y = row;
+    sel.ob.y = row;
+    selnormalize();
+
+    if (sel.snap != 0)
+        sel.mode = SEL_READY;
+    tsetdirt(sel.nb.y, sel.ne.y);
+}
+
+pub export fn selextend(col: c_int, row: c_int, kind: c_int, done: c_int) void {
+    if (sel.mode == SEL_IDLE)
+        return;
+    if (done != 0 and sel.mode == SEL_EMPTY) {
+        selclear();
+        return;
+    }
+
+    const oldey = sel.oe.y;
+    const oldex = sel.oe.x;
+    const oldsby = sel.nb.y;
+    const oldsey = sel.ne.y;
+    const oldtype = sel.@"type";
+
+    sel.oe.x = col;
+    sel.oe.y = row;
+    selnormalize();
+    sel.@"type" = kind;
+
+    if (oldey != sel.oe.y or oldex != sel.oe.x or oldtype != sel.@"type")
+        tsetdirt(math.min(sel.nb.y, oldsby), math.max(sel.ne.y, oldsey));
+
+    sel.mode = if (done != 0) u8(SEL_IDLE) else u8(SEL_READY);
+}
+
+pub export fn getsel() ?[*]u8 {
+    if (sel.ob.x == -1)
+        return null;
+
+    const bufsize = (term.col + 1) * (sel.ne.y - sel.nb.y + 1) * @sizeOf(Rune);
+    const str = allocator.alloc(u8, @intCast(usize, bufsize)) catch unreachable;
+
+    // append every set & selected glyph to the selection
+    var i: usize = 0;
+    var y: c_int = sel.nb.y;
+    while (y <= sel.ne.y) : (y += 1) {
+        const linelen = tlinelen(y);
+        if (linelen == 0) {
+            str[i] = '\n';
+            i += 1;
+            continue;
+        }
+
+        var gp: usize = undefined;
+        var lastx: c_int = undefined;
+        if (sel.@"type" == SEL_RECTANGULAR) {
+            gp = @intCast(usize, sel.nb.x);
+            lastx = sel.ne.x;
+        } else {
+            gp = if (sel.nb.y == y) @intCast(usize, sel.nb.x) else usize(0);
+            lastx = if (sel.ne.y == y) sel.ne.x else term.col - 1;
+        }
+
+        const line = term.line[@intCast(usize, y)];
+        var last = @intCast(usize, math.min(lastx, linelen - 1));
+        while (last >= gp and line[last].u == ' ')
+            last -= 1;
+
+        while (gp <= last) : (gp += 1) {
+            const p = line[gp];
+            if (p.mode & ATTR_WDUMMY != 0)
+                continue;
+
+            i += utf8encode(p.u, str[i..].ptr);
+        }
+
+        // Copy and pasting of line endings is inconsistent
+        // in the inconsistent terminal and GUI world.
+        // The best solution seems like to produce '\n' when
+        // something is copied from st and convert '\n' to
+        // '\r', when something to be pasted is received by
+        // st.
+        // FIXME: Fix the computer world.
+        if ((y < sel.ne.y or lastx >= linelen) and line[last].mode & ATTR_WRAP == 0) {
+            str[i] = '\n';
+            i += 1;
+        }
+    }
+    str[i] = 0;
+    return str[0..].ptr;
 }
