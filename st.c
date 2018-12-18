@@ -167,7 +167,8 @@ static void strhandle(void);
 static void strparse(void);
 static void strreset(void);
 
-static void tprinter(char *, size_t);
+void tprinter(char *, size_t);
+
 static void tdumpsel(void);
 static void tdumpline(int);
 static void tdump(void);
@@ -216,38 +217,20 @@ static size_t utf8validate(Rune *, size_t);
 static char *base64dec(const char *);
 static char base64dec_getc(const char **);
 
-static ssize_t xwrite(int, const char *, size_t);
-
 /* Globals */
 static Term term;
 static Selection sel;
 static CSIEscape csiescseq;
 static STREscape strescseq;
-static int iofd = 1;
 static int cmdfd;
 static pid_t pid;
+
+int iofd = 1;
 
 static uchar utfbyte[UTF_SIZ + 1] = {0x80,    0, 0xC0, 0xE0, 0xF0};
 static uchar utfmask[UTF_SIZ + 1] = {0xC0, 0x80, 0xE0, 0xF0, 0xF8};
 static Rune utfmin[UTF_SIZ + 1] = {       0,    0,  0x80,  0x800,  0x10000};
 static Rune utfmax[UTF_SIZ + 1] = {0x10FFFF, 0x7F, 0x7FF, 0xFFFF, 0x10FFFF};
-
-ssize_t
-xwrite(int fd, const char *s, size_t len)
-{
-	size_t aux = len;
-	ssize_t r;
-
-	while (len > 0) {
-		r = write(fd, s, len);
-		if (r < 0)
-			return r;
-		len -= r;
-		s += r;
-	}
-
-	return aux;
-}
 
 size_t
 utf8decode(const char *c, Rune *u, size_t clen)
@@ -1939,16 +1922,6 @@ sendbreak(const Arg *arg)
 {
 	if (tcsendbreak(cmdfd, 0))
 		perror("Error sending break");
-}
-
-void
-tprinter(char *s, size_t len)
-{
-	if (iofd != -1 && xwrite(iofd, s, len) < 0) {
-		perror("Error writing to output file");
-		close(iofd);
-		iofd = -1;
-	}
 }
 
 void
