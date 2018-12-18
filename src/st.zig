@@ -15,6 +15,22 @@ const ESC_ARG_SIZ = 16;
 const STR_BUF_SIZ = ESC_BUF_SIZ;
 const STR_ARG_SIZ = ESC_ARG_SIZ;
 
+const MODE_WRAP = 1 << 0;
+const MODE_INSERT = 1 << 1;
+const MODE_ALTSCREEN = 1 << 2;
+const MODE_CRLF = 1 << 3;
+const MODE_ECHO = 1 << 4;
+const MODE_PRINT = 1 << 5;
+const MODE_UTF8 = 1 << 6;
+const MODE_SIXEL = 1 << 7;
+
+const SEL_REGULAR = 1;
+const SEL_RECTANGULAR = 2;
+
+const SEL_IDLE = 0;
+const SEL_EMPTY = 1;
+const SEL_READY = 2;
+
 const ESC_START = 1 << 0;
 const ESC_CSI = 1 << 1;
 
@@ -98,11 +114,34 @@ const Term = extern struct {
     tabs: *c_int,
 };
 
+const Point = extern struct {
+    x: c_int,
+    y: c_int,
+};
+
+const Selection = extern struct {
+    mode: c_int,
+    @"type": c_int,
+    snap: c_int,
+
+    /// Selection variables:
+    /// nb – normalized coordinates of the beginning of the selection
+    /// ne – normalized coordinates of the end of the selection
+    /// ob – original coordinates of the beginning of the selection
+    /// oe – original coordinates of the end of the selection
+    nb: Point,
+    ne: Point,
+    ob: Point,
+    oe: Point,
+    alt: c_int,
+};
+
 // This was a typedef of uint_least32_t. Is there anywhere where
 // uint_least32_t != uint32_t in practice?
 const Rune = u32;
 const UTF_INVALID = 0xFFFD;
 
+extern var sel: Selection;
 extern var iofd: c_int;
 extern var term: Term;
 extern var strescseq: STREscape;
@@ -259,4 +298,21 @@ pub export fn tstrsequence(char: u8) void {
         else => strescseq.@"type" = char,
     }
     term.esc |= ESC_STR;
+}
+
+pub export fn selected(x: c_int, y: c_int) c_int {
+    if (sel.mode == SEL_EMPTY or sel.ob.x == -1 or (sel.alt != 0) != (term.mode & MODE_ALTSCREEN != 0))
+        return 0;
+
+    if (sel.@"type" == SEL_RECTANGULAR)
+        return @boolToInt(between(y, sel.nb.y, sel.ne.y) and
+            between(x, sel.nb.x, sel.ne.x));
+
+    return @boolToInt(between(y, sel.nb.y, sel.ne.y) and
+        (y != sel.nb.y or x >= sel.nb.x) and
+        (y != sel.ne.y or x <= sel.ne.x));
+}
+
+fn between(x: var, a: @typeOf(x), b: @typeOf(x)) bool {
+    return a <= x and x <= b;
 }

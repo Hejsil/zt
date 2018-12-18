@@ -213,11 +213,11 @@ static char *base64dec(const char *);
 static char base64dec_getc(const char **);
 
 /* Globals */
-static Selection sel;
 static CSIEscape csiescseq;
 static int cmdfd;
 static pid_t pid;
 
+Selection sel;
 STREscape strescseq;
 Term term;
 int iofd = 1;
@@ -370,22 +370,6 @@ selnormalize(void)
 		sel.nb.x = i;
 	if (tlinelen(sel.ne.y) <= sel.ne.x)
 		sel.ne.x = term.col - 1;
-}
-
-int
-selected(int x, int y)
-{
-	if (sel.mode == SEL_EMPTY || sel.ob.x == -1 ||
-			sel.alt != IS_SET(MODE_ALTSCREEN))
-		return 0;
-
-	if (sel.type == SEL_RECTANGULAR)
-		return BETWEEN(y, sel.nb.y, sel.ne.y)
-		    && BETWEEN(x, sel.nb.x, sel.ne.x);
-
-	return BETWEEN(y, sel.nb.y, sel.ne.y)
-	    && (y != sel.nb.y || x >= sel.nb.x)
-	    && (y != sel.ne.y || x <= sel.ne.x);
 }
 
 void
