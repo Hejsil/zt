@@ -43,6 +43,16 @@ pub fn build(b: *Builder) !void {
         exe.addObject(obj);
     }
 
+    inline for ([][]const u8{"st"}) |obj_name| {
+        const obj = b.addObject(obj_name ++ "-zig", "src/" ++ obj_name ++ ".zig");
+        exe.addObject(obj);
+    }
+
+    const run_step = b.step("run", "Run the zt");
+    const run_cmd = b.addCommand(".", b.env_map, [][]const u8{exe.getOutputPath()});
+    run_step.dependOn(&run_cmd.step);
+    run_cmd.step.dependOn(&exe.step);
+
     b.default_step.dependOn(&exe.step);
 }
 
