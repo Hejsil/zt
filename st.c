@@ -176,6 +176,7 @@ void drawregion(int, int, int, int);
 void tsetdirt(int, int);
 void tfulldirt(void);
 void tstrsequence(uchar);
+void tmoveto(int, int);
 
 static void tdumpsel(void);
 static void tdumpline(int);
@@ -186,7 +187,6 @@ static void tdeletechar(int);
 static void tdeleteline(int);
 static void tinsertblank(int);
 static void tinsertblankline(int);
-static void tmoveto(int, int);
 static void tmoveato(int, int);
 static void tnewline(int);
 static void tputtab(int);
@@ -918,23 +918,6 @@ void
 tmoveato(int x, int y)
 {
 	tmoveto(x, y + ((term.c.state & CURSOR_ORIGIN) ? term.top: 0));
-}
-
-void
-tmoveto(int x, int y)
-{
-	int miny, maxy;
-
-	if (term.c.state & CURSOR_ORIGIN) {
-		miny = term.top;
-		maxy = term.bot;
-	} else {
-		miny = 0;
-		maxy = term.row - 1;
-	}
-	term.c.state &= ~CURSOR_WRAPNEXT;
-	term.c.x = LIMIT(x, 0, term.col-1);
-	term.c.y = LIMIT(y, miny, maxy);
 }
 
 void

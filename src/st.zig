@@ -16,6 +16,10 @@ const ESC_ARG_SIZ = 16;
 const STR_BUF_SIZ = ESC_BUF_SIZ;
 const STR_ARG_SIZ = ESC_ARG_SIZ;
 
+const CURSOR_DEFAULT = 0;
+const CURSOR_WRAPNEXT = 1;
+const CURSOR_ORIGIN = 2;
+
 const SNAP_WORD = 1;
 const SNAP_LINE = 2;
 
@@ -400,4 +404,21 @@ pub export fn tlinelen(y: c_int) c_int {
         i -= 1;
 
     return i;
+}
+
+pub export fn tmoveto(x: c_int, y: c_int) void {
+    var miny: c_int = undefined;
+    var maxy: c_int = undefined;
+
+    if (term.c.state & CURSOR_ORIGIN != 0) {
+        miny = term.top;
+        maxy = term.bot;
+    } else {
+        miny = 0;
+        maxy = term.row - 1;
+    }
+
+    term.c.state &= ~u8(CURSOR_WRAPNEXT);
+    term.c.x = limit(x, 0, term.col - 1);
+    term.c.y = limit(y, miny, maxy);
 }
