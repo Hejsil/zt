@@ -422,3 +422,9 @@ pub export fn tmoveto(x: c_int, y: c_int) void {
     term.c.x = limit(x, 0, term.col - 1);
     term.c.y = limit(y, miny, maxy);
 }
+
+pub export fn selinit() void {
+    sel.mode = SEL_IDLE;
+    sel.snap = 0;
+    sel.ob.x = -1;
+}

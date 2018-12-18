@@ -277,14 +277,6 @@ base64dec(const char *src)
 }
 
 void
-selinit(void)
-{
-	sel.mode = SEL_IDLE;
-	sel.snap = 0;
-	sel.ob.x = -1;
-}
-
-void
 selstart(int col, int row, int snap)
 {
 	selclear();
