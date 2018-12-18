@@ -169,6 +169,7 @@ static void strreset(void);
 
 void tprinter(char *, size_t);
 size_t utf8decode(const char *, Rune *, size_t);
+char *utf8strchr(char *, Rune);
 
 static void tdumpsel(void);
 static void tdumpline(int);
@@ -209,8 +210,6 @@ static void selnormalize(void);
 static void selscroll(int, int);
 static void selsnap(int *, int *, int);
 
-static char *utf8strchr(char *, Rune);
-
 static char *base64dec(const char *);
 static char base64dec_getc(const char **);
 
@@ -228,23 +227,6 @@ static uchar utfbyte[UTF_SIZ + 1] = {0x80,    0, 0xC0, 0xE0, 0xF0};
 static uchar utfmask[UTF_SIZ + 1] = {0xC0, 0x80, 0xE0, 0xF0, 0xF8};
 static Rune utfmin[UTF_SIZ + 1] = {       0,    0,  0x80,  0x800,  0x10000};
 static Rune utfmax[UTF_SIZ + 1] = {0x10FFFF, 0x7F, 0x7FF, 0xFFFF, 0x10FFFF};
-
-char *
-utf8strchr(char *s, Rune u)
-{
-	Rune r;
-	size_t i, j, len;
-
-	len = strlen(s);
-	for (i = 0, j = 0; i < len; i += j) {
-		if (!(j = utf8decode(&s[i], &r, len - i)))
-			break;
-		if (r == u)
-			return &(s[i]);
-	}
-
-	return NULL;
-}
 
 static const char base64_digits[] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

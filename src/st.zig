@@ -59,3 +59,26 @@ pub export fn utf8encode(u: Rune, s: [*]u8) usize {
     const len = unicode.utf8CodepointSequenceLength(u) catch return 0;
     return unicode.utf8Encode(u, s[0..len]) catch unreachable;
 }
+
+pub export fn utf8strchr(s: [*]const u8, u: Rune) ?[*]const u8 {
+    const len = mem.len(u8, s);
+    const slice = s[0..len];
+    var i: usize = 0;
+    while (i < len) {
+        const plen = unicode.utf8ByteSequenceLength(slice[i]) catch break;
+        if (len < i + plen)
+            break;
+
+        const p = unicode.utf8Decode(slice[i..][0..plen]) catch break;
+        i += len;
+
+        if (p == u)
+            return slice[i..].ptr;
+    }
+    var iter = unicode.Utf8Iterator{
+        .bytes = s[0..len],
+        .i = 0,
+    };
+
+    return null;
+}
