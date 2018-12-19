@@ -602,3 +602,11 @@ pub export fn tswapscreen() void {
     term.mode ^= MODE_ALTSCREEN;
     tfulldirt();
 }
+
+pub export fn tdefutf8(ascii: u8) void {
+    if (ascii == 'G') {
+        term.mode |= MODE_UTF8;
+    } else if (ascii == '@') {
+        term.mode &= ~c_int(MODE_UTF8);
+    }
+}

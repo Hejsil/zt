@@ -180,6 +180,7 @@ void tstrsequence(uchar);
 void tmoveto(int, int);
 void tcursor(int);
 void tswapscreen(void);
+void tdefutf8(char);
 
 static void tdumpsel(void);
 static void tdumpline(int);
@@ -203,7 +204,6 @@ static void tsetmode(int, int, int *, int);
 static int twrite(const char *, int, int);
 static void tcontrolcode(uchar );
 static void tdectest(char );
-static void tdefutf8(char);
 static int32_t tdefcolor(int *, int *, int);
 static void tdeftran(char);
 
@@ -1570,15 +1570,6 @@ tputtab(int n)
 				/* nothing */ ;
 	}
 	term.c.x = LIMIT(x, 0, term.col-1);
-}
-
-void
-tdefutf8(char ascii)
-{
-	if (ascii == 'G')
-		term.mode |= MODE_UTF8;
-	else if (ascii == '@')
-		term.mode &= ~MODE_UTF8;
 }
 
 void
