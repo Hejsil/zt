@@ -133,10 +133,10 @@ const Selection = extern struct {
     snap: c_int,
 
     /// Selection variables:
-    /// nb – normalized coordinates of the beginning of the selection
-    /// ne – normalized coordinates of the end of the selection
-    /// ob – original coordinates of the beginning of the selection
-    /// oe – original coordinates of the end of the selection
+    /// nb - normalized coordinates of the beginning of the selection
+    /// ne - normalized coordinates of the end of the selection
+    /// ob - original coordinates of the beginning of the selection
+    /// oe - original coordinates of the end of the selection
     nb: Point,
     ne: Point,
     ob: Point,
@@ -563,4 +563,17 @@ pub export fn getsel() ?[*]u8 {
     }
     str[i] = 0;
     return str[0..].ptr;
+}
+
+pub export fn tattrset(attr: c_int) c_int {
+    var i: usize = 0;
+    while (i < @intCast(usize, term.row - 1)) : (i += 1) {
+        var j: usize = 0;
+        while (j < @intCast(usize, term.col - 1)) : (j += 1) {
+            if (@intCast(c_int, term.line[i][j].mode) & attr != 0)
+                return 1;
+        }
+    }
+
+    return 0;
 }
