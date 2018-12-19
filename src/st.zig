@@ -16,6 +16,9 @@ const ESC_ARG_SIZ = 16;
 const STR_BUF_SIZ = ESC_BUF_SIZ;
 const STR_ARG_SIZ = ESC_ARG_SIZ;
 
+const CURSOR_SAVE = 0;
+const CURSOR_LOAD = 1;
+
 const CURSOR_DEFAULT = 0;
 const CURSOR_WRAPNEXT = 1;
 const CURSOR_ORIGIN = 2;
@@ -576,4 +579,18 @@ pub export fn tattrset(attr: c_int) c_int {
     }
 
     return 0;
+}
+
+pub export fn tcursor(mode: c_int) void {
+    const cur: *[2]TCursor = &struct {
+        var cur: [2]TCursor = undefined;
+    }.cur;
+
+    const alt = @boolToInt(isSet(MODE_ALTSCREEN));
+    if (mode == CURSOR_SAVE) {
+        cur[alt] = term.c;
+    } else if (mode == CURSOR_LOAD) {
+        term.c = cur[alt];
+        tmoveto(cur[alt].x, cur[alt].y);
+    }
 }

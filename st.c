@@ -178,12 +178,12 @@ void tsetdirt(int, int);
 void tfulldirt(void);
 void tstrsequence(uchar);
 void tmoveto(int, int);
+void tcursor(int);
 
 static void tdumpsel(void);
 static void tdumpline(int);
 static void tdump(void);
 static void tclearregion(int, int, int, int);
-static void tcursor(int);
 static void tdeletechar(int);
 static void tdeleteline(int);
 static void tinsertblank(int);
@@ -575,20 +575,6 @@ tsetdirtattr(int attr)
 				break;
 			}
 		}
-	}
-}
-
-void
-tcursor(int mode)
-{
-	static TCursor c[2];
-	int alt = IS_SET(MODE_ALTSCREEN);
-
-	if (mode == CURSOR_SAVE) {
-		c[alt] = term.c;
-	} else if (mode == CURSOR_LOAD) {
-		term.c = c[alt];
-		tmoveto(c[alt].x, c[alt].y);
 	}
 }
 
