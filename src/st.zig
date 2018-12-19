@@ -110,7 +110,7 @@ const Term = extern struct {
     row: c_int,
     col: c_int,
     line: [*]Line,
-    alt: *Line,
+    alt: [*]Line,
     dirty: [*]c_int,
     c: TCursor,
     ocx: c_int,
@@ -593,4 +593,12 @@ pub export fn tcursor(mode: c_int) void {
         term.c = cur[alt];
         tmoveto(cur[alt].x, cur[alt].y);
     }
+}
+
+pub export fn tswapscreen() void {
+    const tmp = term.line;
+    term.line = term.alt;
+    term.alt = tmp;
+    term.mode ^= MODE_ALTSCREEN;
+    tfulldirt();
 }

@@ -179,6 +179,7 @@ void tfulldirt(void);
 void tstrsequence(uchar);
 void tmoveto(int, int);
 void tcursor(int);
+void tswapscreen(void);
 
 static void tdumpsel(void);
 static void tdumpline(int);
@@ -198,7 +199,6 @@ static void tscrolldown(int, int);
 static void tsetattr(int *, int);
 static void tsetchar(Rune, Glyph *, int, int);
 static void tsetscroll(int, int);
-static void tswapscreen(void);
 static void tsetmode(int, int, int *, int);
 static int twrite(const char *, int, int);
 static void tcontrolcode(uchar );
@@ -612,17 +612,6 @@ tnew(int col, int row)
 	term = (Term){ .c = { .attr = { .fg = defaultfg, .bg = defaultbg } } };
 	tresize(col, row);
 	treset();
-}
-
-void
-tswapscreen(void)
-{
-	Line *tmp = term.line;
-
-	term.line = term.alt;
-	term.alt = tmp;
-	term.mode ^= MODE_ALTSCREEN;
-	tfulldirt();
 }
 
 void
