@@ -61,7 +61,7 @@ fn linkLibs(exe: *LibExeObjStep, libs: []const []const u8) void {
 
 fn linkPackageConfigLibs(b: *Builder, exe: *LibExeObjStep, package: []const u8) !void {
     const libs = try b.exec([][]const u8{ "pkg-config", "--libs", package });
-    var lib_iter = mem.split(libs, " \t\r\n");
+    var lib_iter = mem.tokenize(libs, " \t\r\n");
     while (lib_iter.next()) |lib| {
         if (!mem.startsWith(u8, lib, "-l"))
             return error.Unexpected;
@@ -86,7 +86,7 @@ fn split(allocator: *mem.Allocator, buffer: []const u8, split_bytes: []const u8)
     var res = std.ArrayList([]const u8).init(allocator);
     defer res.deinit();
 
-    var iter = mem.split(buffer, split_bytes);
+    var iter = mem.tokenize(buffer, split_bytes);
     while (iter.next()) |s|
         try res.append(s);
 
